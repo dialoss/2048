@@ -79,7 +79,8 @@ input::placeholder {
     --cw: calc(100% / var(--w));
     --ch: calc(100% / var(--h));
     background-color: #BBADA0;
-    min-width: 70%;
+    min-width: 90%;
+    /* min-height: 70%; */
     border-radius: 8px;
 }
 
