@@ -79,6 +79,7 @@ class Game {
     }
 
     reset() {
+        this.started = true;
         this.score.set('Рекорд 0', 0);
         this.field.clear();
         this.field = new Field(this.userWidth.get(), this.userHeight.get());

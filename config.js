@@ -24,23 +24,27 @@ export const COLORS = [
         text: "#776E65",
     },
     {
-        bg: "#f00",//64
+        bg: "#FFE579",//64
         text: "#776E65",
     },
     {
-        bg: "#EDCF72",
+        bg: "#FFE50C",
         text: "#776E65",
     },
     {
-        bg: "#EDCF72",
+        bg: "#FF6F0C",
         text: "#776E65",
     },
     {
-        bg: "#EDCF72",
-        text: "#776E65",
+        bg: "#FF270C",
+        text: "#FFEAE7",
     },
     {
-        bg: "#EDCF72",
-        text: "#776E65",
+        bg: "#FF3FA3",
+        text: "#FFEAE7",
+    },
+    {
+        bg: "#FF3FD2",
+        text: "#FFEAE7",
     },
 ]
