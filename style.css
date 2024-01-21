@@ -9,9 +9,20 @@
 input, button {
     border: none;
 }
+input:focus {
+    outline: none;
+}
+.input-wrapper {
+    display: flex;
+    justify-content: space-around;
+}
+input {
+    width: 33% !important; 
+    text-align: center;
+}
 .game {
     width: 100%;
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -21,7 +32,7 @@ input, button {
 .button {
     width: 50%;
     border-radius: 8px;
-    height: 50px;
+    height: 40px;
         
     display: flex;
     justify-content: center;
@@ -62,6 +73,7 @@ input::placeholder {
     cursor: pointer;
 }
 .field-wrapper {
+    margin: 0 10px;
     padding: calc(var(--gap) / 2);
     --gap: 8px;
     --cw: calc(100% / var(--w));
@@ -118,7 +130,7 @@ input::placeholder {
     align-items: center;
     background-color: #CCC0B3;
     font-weight: 700;
-    font-size: calc(10vw);
+    font-size: min(20vw, calc(100vw / var(--h) / 2));
 }
 
 .new-start {

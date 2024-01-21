@@ -55,6 +55,7 @@ class Game {
         document.addEventListener('swiped', e => {
             if (!inputTimeout()) return;
             this.field.shift(e.detail.dir);
+            this.update();
         });
 
         window.addEventListener("keydown", e => {
@@ -98,7 +99,6 @@ class Game {
             this.score.set('Проиграл', 0);
             this.started = false;
         }
-        console.log(this.field.cells)
     }
 }
 
