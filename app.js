@@ -16,14 +16,25 @@ class DocumentElement {
         this.value = value;
         this.el.innerText = text;
     }
+
+    get() {
+        let v = this.el.value;
+        if (!v) return 4;
+        if (v < 1) return 2;
+        if (v > 10) return 10;
+        return v;
+    }
 }
 
 class Game {
     field = null;
     input = null;
     score = new DocumentElement('.score', 0);
+    userWidth = new DocumentElement('input.w');
+    userHeight = new DocumentElement('input.h');
+    started = true;
     constructor() {
-        this.field = new Field(4, 4);
+        this.field = new Field(this.userWidth.get(), this.userHeight.get());
         this.update();
 
         document.querySelector('.again').addEventListener('click', e => {
@@ -34,7 +45,7 @@ class Game {
 
         let t = null;
         const inputTimeout = () => {
-            if (t) return false;
+            if (t || !this.started) return false;
             t = setTimeout(() => {
                 clearTimeout(t);
                 t = null;
@@ -67,15 +78,9 @@ class Game {
     }
 
     reset() {
-        this.score.set('Рекорд 0', 0)
-        
-        for (let j = 0; j < this.field.h; j++) {
-            for (let i = 0; i < this.field.w; i++) {
-                this.field.cells[j][i].value = 0;
-                CELLS.remove(this.field.cells[j][i]);
-            }
-        }
-        this.field.update();
+        this.score.set('Рекорд 0', 0);
+        this.field.clear();
+        this.field = new Field(this.userWidth.get(), this.userHeight.get());
     }
 
     update() {
@@ -90,8 +95,8 @@ class Game {
         }
         this.score.set('Рекорд ' + all, all);
         if (empty == 0) {
-            this.reset();
             this.score.set('Проиграл', 0);
+            this.started = false;
         }
         console.log(this.field.cells)
     }
@@ -133,14 +138,17 @@ class DocumentField {
             cell.updateValue();
     }
 
+    clear() {
+        while (this.cells.firstChild) {
+            this.cells.removeChild(this.cells.lastChild);
+        }
+    }
+
     remove(cell) {
         if (!cell.block) return;
         this.cells.removeChild(cell.block.parentElement);
     }
 }
-
-const CELLS = new DocumentField("movable");
-const TEMPLATE = new DocumentField("template");
 
 class Cell {
     block = null;
@@ -184,6 +192,10 @@ class Field {
     w = 0;
     h = 0;
     hasMerged = false;
+
+    CELLS = new DocumentField("movable");
+    TEMPLATE = new DocumentField("template");
+
     constructor(w, h) {
         document.querySelector(".field-wrapper").style.setProperty('--w', w);
         document.querySelector(".field-wrapper").style.setProperty('--h', h);
@@ -194,12 +206,17 @@ class Field {
             let row = [];
             for (let i = 0; i < w; i++) {
                 row.push(new Cell(i, j, 0));
-                TEMPLATE.add(new Cell(i, j, 0));
+                this.TEMPLATE.add(new Cell(i, j, 0));
             }
             this.cells.push(row);
         }
         this.fill(0.2);
         this.update();
+    }
+
+    clear() {
+        this.CELLS.clear();
+        this.TEMPLATE.clear();
     }
 
     fill(density) {
@@ -212,7 +229,7 @@ class Field {
                     }
                     let cell = new Cell(i, j, Math.pow(2, pow));
                     this.cells[j][i] = cell;
-                    CELLS.add(cell);
+                    this.CELLS.add(cell);
                 }
             }
         }
@@ -233,7 +250,6 @@ class Field {
             case 'up': this.shiftUp(); break;
             case 'down': this.shiftDown(); break;
         }
-        // if (this.hasMerged) 
         this.fill(0.1);
         this.update();
         this.hasMerged = false;
@@ -271,7 +287,7 @@ class Field {
                                     cells[j][k].updateValue();
                                 }, 100);
                                 setTimeout(() => {
-                                    CELLS.remove(cTo);
+                                    this.CELLS.remove(cTo);
                                 }, TRANSITION);
                             }
                             cells[j][i] = new Cell(i, j, 0);
