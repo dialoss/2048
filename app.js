@@ -1,56 +1,110 @@
 import { COLORS } from "./config.js";
+import "./events.js";
+
+const TRANSITION = 200;
+
+class DocumentElement {
+    value = 0;
+    text = '';
+    el = null;
+    constructor(selector, value) {
+        this.el = document.querySelector(selector);
+        this.value = value;
+    }
+
+    set(text, value) {
+        this.value = value;
+        this.el.innerText = text;
+    }
+}
 
 class Game {
     field = null;
     input = null;
+    score = new DocumentElement('.score', 0);
     constructor() {
-        this.field = new Field(4,4);
-        this.input = new Input(this.field, this.checkLose);
-    }
+        this.field = new Field(4, 4);
+        this.update();
 
-    checkLose() {
-        let empty = 0;
-        for (let j = 0; j < this.field.h; j++) {
-            for (let i = 0; i < this.field.w; i++) {
-                empty += this.field.cells[j][i].value == 0;
-            }
-        }
-        if (empty == 0) {
-            console.log('LOSE');
-            this.field = new Field(4, 4);
-        }
-    }
-}
+        document.querySelector('.again').addEventListener('click', e => {
+            this.reset();
+            this.field.fill(0.2);
+            this.update();
+        });
 
-class Input {
-    constructor(field, callback) {
+        let t = null;
+        const inputTimeout = () => {
+            if (t) return false;
+            t = setTimeout(() => {
+                clearTimeout(t);
+                t = null;
+            }, 100);
+            return true;
+        }
+        document.addEventListener('swiped', e => {
+            if (!inputTimeout()) return;
+            this.field.shift(e.detail.dir);
+        });
+
         window.addEventListener("keydown", e => {
+            if (!inputTimeout()) return;
             switch (e.key) {
                 case "ArrowLeft":
-                    field.shiftLeft();
+                    this.field.shift('left');
                     break;
                 case "ArrowUp":
-                    field.shiftUp();
+                    this.field.shift('up');
                     break;
                 case "ArrowRight":
-                    field.shiftRight();
+                    this.field.shift('right');
                     break;
                 case "ArrowDown":
-                    field.shiftDown();
+                    this.field.shift('down');
                     break;
             }
+            this.update();
         });
+    }
+
+    reset() {
+        this.score.set('Рекорд 0', 0)
+        
+        for (let j = 0; j < this.field.h; j++) {
+            for (let i = 0; i < this.field.w; i++) {
+                this.field.cells[j][i].value = 0;
+                CELLS.remove(this.field.cells[j][i]);
+            }
+        }
+        this.field.update();
+    }
+
+    update() {
+        let empty = 0;
+        let all = 0;
+        for (let j = 0; j < this.field.h; j++) {
+            for (let i = 0; i < this.field.w; i++) {
+                let v = this.field.cells[j][i].value;
+                empty += v == 0;
+                all += v;
+            }
+        }
+        this.score.set('Рекорд ' + all, all);
+        if (empty == 0) {
+            this.reset();
+            this.score.set('Проиграл', 0);
+        }
+        console.log(this.field.cells)
     }
 }
 
 class Animation {
     static anim(element, name) {
-        element.classList.remove(name + "-end");       
+        element.classList.remove(name + "-end");
         element.classList.add(name + "-start");
-        setTimeout(() => {     
-            element.classList.remove(name + "-start");       
+        setTimeout(() => {
+            element.classList.remove(name + "-start");
             element.classList.add(name + "-end");
-        }, 200);
+        }, TRANSITION);
     }
 
     static new(element) {
@@ -73,14 +127,14 @@ class DocumentField {
         wrapper.appendChild(block);
         this.cells.appendChild(wrapper);
         cell.block = block;
-        cell.update();
-        Animation.new(wrapper);   
+        Animation.new(wrapper);
 
-        if (cell.value != 0) 
-        cell.set(cell.x, cell.y, cell.value);
+        if (cell.value != 0)
+            cell.updateValue();
     }
-    
+
     remove(cell) {
+        if (!cell.block) return;
         this.cells.removeChild(cell.block.parentElement);
     }
 }
@@ -91,6 +145,7 @@ const TEMPLATE = new DocumentField("template");
 class Cell {
     block = null;
     value = 0;
+    merged = false;
     x = 0;
     y = 0;
     constructor(x, y, value) {
@@ -99,24 +154,28 @@ class Cell {
         this.value = value;
     }
 
-    set(x, y, value) {        
-        this.value = value;
-        let pow = Math.log2(Math.max(1, value));
-    
-        this.block.style.backgroundColor = COLORS[pow].bg;
-        this.block.style.color = COLORS[pow].text;
-
-        this.block.textContent = value;
-
+    updatePosition(x, y) {
         this.x = x;
         this.y = y;
-    }
-
-    update() {
         if (!this.block) return;
         let wrapper = this.block.parentElement;
-        wrapper.style.setProperty('--x', this.x);
-        wrapper.style.setProperty('--y', this.y);
+        wrapper.style.setProperty('--x', x);
+        wrapper.style.setProperty('--y', y);
+        this.merged = false;
+    }
+
+    updateValue() {
+        let pow = Math.log2(Math.max(1, this.value));
+
+        this.block.style.backgroundColor = COLORS[pow].bg;
+        this.block.style.color = COLORS[pow].text;
+        this.block.textContent = this.value;
+    }
+
+    static copy(cell) {
+        let c = new Cell(cell.x, cell.y, cell.value);
+        c.block = cell.block;
+        return c;
     }
 }
 
@@ -124,6 +183,7 @@ class Field {
     cells = [];
     w = 0;
     h = 0;
+    hasMerged = false;
     constructor(w, h) {
         document.querySelector(".field-wrapper").style.setProperty('--w', w);
         document.querySelector(".field-wrapper").style.setProperty('--h', h);
@@ -138,13 +198,14 @@ class Field {
             }
             this.cells.push(row);
         }
-        this.fill();
+        this.fill(0.2);
+        this.update();
     }
 
-    fill() {
+    fill(density) {
         for (let j = 0; j < this.h; j++) {
             for (let i = 0; i < this.w; i++) {
-                if (Math.random() < 0.2 && this.cells[j][i].value == 0) {
+                if (Math.random() < density && this.cells[j][i].value == 0) {
                     let pow = 1;
                     if (Math.random() > 0.7) {
                         pow = 2;
@@ -160,86 +221,108 @@ class Field {
     update() {
         for (let j = 0; j < this.h; j++) {
             for (let i = 0; i < this.w; i++) {
-                this.cells[j][i].update();
+                this.cells[j][i].updatePosition(i, j);
             }
         }
     }
 
-    shift(w, h, cells) {
-        for (let j = 0; j < h; j++) {
-            for (let i = 0; i < w; i++) {
-                let c2 = cells[j][i];
-                if (cells[j][i].value != 0) {
-                    let clearRow = true;
-                    for (let k = 0; k < w; k++) {
-                        let c1 = cells[j][k];
+    shift(dir) {
+        switch (dir) {
+            case 'left': this.shiftLeft(); break;
+            case 'right': this.shiftRight(); break;
+            case 'up': this.shiftUp(); break;
+            case 'down': this.shiftDown(); break;
+        }
+        // if (this.hasMerged) 
+        this.fill(0.1);
+        this.update();
+        this.hasMerged = false;
+    }
+
+    shiftHorizontally(cells, dir) {
+        let start = dir == 1 ? 0 : cells[0].length - 1;
+        for (let j = 0; j < cells.length; j++) {
+            let i = start;
+            while (i >= 0 && i < cells[0].length) {
+                let cMove = cells[j][i];
+                if (cMove.value != 0) {
+                    let k = start;
+                    while (k >= 0 && k < cells[0].length) {
                         if (k == i) break;
-                        let v1 = c1.value;
-                        let v2 = c2.value;
-                        if (v1 == 0 || (v1 == v2 && clearRow)) {
-                            cells[j][k] = c2;
-                            cells[j][k].set(k, j, v1 + v2);
-                            if (v1 != 0) CELLS.remove(cells[j][i]);
+                        let cTo = cells[j][k];
+                        let v1 = cTo.value;
+                        let v2 = cMove.value;
+                        let clearRow = true;
+                        for (let p = Math.min(k, i) + 1; p < Math.max(k, i); p++) {
+                            if (cells[j][p].value != 0) {
+                                clearRow = false;
+                                break;
+                            }
+                        }
+                        if ((v1 == 0 || (v1 == v2)) && !cTo.merged && clearRow) {
+                            cells[j][k] = Cell.copy(cMove);
+                            cells[j][k].value = v1 + v2;
+       
+                            if (v1 != 0) {
+                                cells[j][k].merged = true;
+                                this.hasMerged = true;
+                                Animation.new(cells[j][k].block.parentElement);
+                                setTimeout(() => {
+                                    cells[j][k].updateValue();
+                                }, 100);
+                                setTimeout(() => {
+                                    CELLS.remove(cTo);
+                                }, TRANSITION);
+                            }
                             cells[j][i] = new Cell(i, j, 0);
                             break;
                         }
-                        clearRow = false;
+                        k += dir;
                     }
                 }
+                i += dir;
             }
         }
-        // this.fill();
         return cells;
     }
 
     shiftLeft() {
-        this.shift(this.w, this.h, this.cells);
-        this.update();
-        console.log(this.cells);
-    }
-
-    transpose(matrix) {
-        let cells = []
-        for (let i = matrix[0].length - 1; i >= 0; i--) {
-            let row = [];
-            for (let j = 0; j < matrix.length; j++) {
-                row.push(matrix[j][i]);
-            }
-            cells.push(row);
-        }
-        return cells;
-    }
-   
-    transposeReverse(matrix) {
-        let cells = [];
-        for (let i = 0; i < matrix[0].length; i++) {
-            cells.push(Array(matrix.length));
-        }
-        for (let j = 0; j < matrix.length; j++) {
-            for (let i = 0; i < matrix[0].length; i++) {
-                cells[i][j] = matrix[j][i];
-            }
-        }
-        return cells;
-    }
-
-    shiftUp() {
-        let cells = this.transpose(this.cells);
-        cells = this.shift(this.h, this.w, cells);
-
-        this.cells = this.transposeReverse(cells);
-        this.update();
-        console.log(this.cells);
-
+        this.cells = this.shiftHorizontally(this.cells, 1);
     }
 
     shiftRight() {
-        this.shift(this.w, this.h, cells);
+        this.cells = this.shiftHorizontally(this.cells, -1);
+    }
+   
+    shiftVertically(dir) {
+        let w = this.cells[0].length;
+        let h = this.cells.length;
+
+        let matrix = fillMatrix(h, w);
+        for (let i = w - 1; i >= 0; i--) {
+            for (let j = 0; j < h; j++) {
+                matrix[w - i - 1][j] = this.cells[j][i];
+            }
+        }
+
+        matrix = this.shiftHorizontally(matrix, dir);
+        for (let i = w - 1; i >= 0; i--) {
+            for (let j = 0; j < h; j++) {
+                this.cells[j][i] = matrix[w - i - 1][j];
+            }
+        }
+    }
+
+    shiftUp() {
+        this.shiftVertically(1);        
     }
 
     shiftDown() {
-        this.shift(this.h, this.w, cells);
+        this.shiftVertically(-1);        
     }
 }
+
+const fillMatrix = (w, h) => Array(h).fill().map(a =>
+    Array(w).fill(0));
 
 let game = new Game();

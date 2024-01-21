@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
 * {
+    padding: 0;
+    margin: 0;
     box-sizing: border-box;
     font-family: "Open Sans", sans-serif;
 }
@@ -11,6 +13,32 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
+}
+.button {
+    width: 50%;
+    border-radius: 8px;
+    height: 50px;
+        
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.score {
+    background-color: #BBADA0;
+    margin: 20px 0;
+}
+.again {
+    margin-top: auto;
+    margin-bottom: 20px;
+    background-color: rgb(51, 121, 121);
+    color: white;
+    font-size: 25px;
+}
+.again:hover {
+
+    opacity: 0.9;
+    cursor: pointer;
 }
 .field-wrapper {
     padding: calc(var(--gap) / 2);

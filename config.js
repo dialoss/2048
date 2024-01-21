@@ -16,7 +16,27 @@ export const COLORS = [
         text: "#776E65",
     },
     {
-        bg: "#F59563",
+        bg: "#F59563", //16
+        text: "#776E65",
+    },
+    {
+        bg: "#EDCF72",//32
+        text: "#776E65",
+    },
+    {
+        bg: "#f00",//64
+        text: "#776E65",
+    },
+    {
+        bg: "#EDCF72",
+        text: "#776E65",
+    },
+    {
+        bg: "#EDCF72",
+        text: "#776E65",
+    },
+    {
+        bg: "#EDCF72",
         text: "#776E65",
     },
     {
